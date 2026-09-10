@@ -1,0 +1,12 @@
+{
+  "name": "undangan-ika-rasyid",
+  "version": "1.0.0",
+  "description": "Undangan Digital Ika & Rasyid",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
