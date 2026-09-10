@@ -1,1 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Undangan - Upload & Kirim WA</title>
+    <!-- Library SheetJS untuk membaca file Excel / CSV -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f9; color: #333; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; color: #5a4a3a; margin-bottom: 20px; }
+        .upload-area { margin-bottom: 20px; padding: 20px; border: 2px dashed #ccc; border-radius: 6px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; font-size: 0.9rem; }
+        th { background-color: #f8f9fa; }
+        .btn-wa { background-color: #25D366; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.8rem; display: inline-block; }
+        .btn-wa:hover { background-color: #1eb956; }
+    </style>
+</head>
+<body>
 
+    <div class="card">
+        <h1>Dashboard Broadcast WhatsApp Undangan</h1>
+        
+        <div class="upload-area">
+            <p><strong>Unggah File Excel atau CSV</strong> (Gunakan header kolom: <code>nama</code> dan <code>no_wa</code>)</p>
+            <input type="file" id="excel-file" accept=".xlsx, .xls, .csv">
+        </div>
+
+        <div id="table-container">
+            <p style="color: #777;">Silakan upload file untuk melihat daftar tamu dan tombol pengiriman WA.</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('excel-file').addEventListener('change', handleFile);
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheet];
+                
+                // Convert JSON
+                const json = XLSX.utils.sheet_to_json(worksheet);
+                renderTable(json);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderTable(data) {
+            if (data.length === 0) return;
+
+            const domainUtama = window.location.origin; // Otomatis mengambil domain domain.com Anda
+
+            let html = `<table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Tamu</th>
+                        <th>Nomor WA</th>
+                        <th>Link Undangan</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            data.forEach((row, index) => {
+                const nama = row.nama || row.Nama || 'Tamu';
+                let noWa = String(row.no_wa || row.wa || row.WA || '').trim();
+
+                // Format nomor WA dari 08xx menjadi 628xx
+                if (noWa.startsWith('0')) {
+                    noWa = '62' + noWa.slice(1);
+                }
+
+                // Link Unik Undangan
+                const linkUnik = `${domainUtama}/?to=${encodeURIComponent(nama)}`;
+
+                // Draf Pesan WA sesuai permintaan
+                const pesanTeks = `Bismillahirrahmanirrahim,\nKepada Yth. Bapak/Ibu/Saudara/i *${nama}*\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Anda untuk hadir pada acara pernikahan kami. Untuk detail acara, lokasi, dan foto, silakan buka tautan undangan digital berikut:\n\n${linkUnik}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir untuk memberikan doa restu.\n\nKami yang berbahagia, *Ika & Rasyid*`;
+
+                const waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesanTeks)}`;
+
+                html += `<tr>
+                    <td>${index + 1}</td>
+                    <td><strong>${nama}</strong></td>
+                    <td>${noWa}</td>
+                    <td><a href="${linkUnik}" target="_blank" style="font-size:0.8rem; color:#0066cc;">Lihat Link</a></td>
+                    <td><a href="${waUrl}" target="_blank" class="btn-wa">📱 Kirim WA</a></td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('table-container').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
